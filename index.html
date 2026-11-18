@@ -1,0 +1,164 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>RackFlip: your magazine rack, from Komga</title>
+<meta name="description" content="RackFlip is a magazine reader for iPhone and iPad that reads from your own Komga server, with a real page curl, two-page spreads, offline issues and the iPhone Duo's fold.">
+<link rel="icon" href="assets/icon.png">
+<style>
+  :root {
+    --rack: #1A2030; --shelf: #262E40; --paper: #D9D6CF; --ink: #F4F1EA;
+    --magenta: #E5007E; --cyan: #009FE3; --yellow: #FFE500; --chrome: #8A93A6;
+    --serif: ui-serif, "New York", "Iowan Old Style", Georgia, serif;
+    --sans: -apple-system, BlinkMacSystemFont, "SF Pro Text", "Helvetica Neue", sans-serif;
+  }
+  * { box-sizing: border-box; }
+  html { background: var(--rack); }
+  body { margin: 0; color: var(--ink); font: 17px/1.55 var(--sans); -webkit-font-smoothing: antialiased; }
+  a { color: var(--yellow); }
+  .wrap { max-width: 1080px; margin: 0 auto; padding: 0 24px; }
+
+  /* Registration marks and a CMYK strip, the way a press sheet is trimmed */
+  .press { height: 6px; display: flex; }
+  .press span { flex: 1; } .c { background: var(--cyan); } .m { background: var(--magenta); }
+  .y { background: var(--yellow); } .k { background: #000; }
+
+  header.hero { padding: 72px 0 40px; position: relative; overflow: hidden; }
+  header.hero::before { /* the wire rack */
+    content: ""; position: absolute; inset: 0; opacity: .07; pointer-events: none;
+    background:
+      repeating-linear-gradient(45deg, #fff 0 1px, transparent 1px 28px),
+      repeating-linear-gradient(-45deg, #fff 0 1px, transparent 1px 28px);
+    mask-image: linear-gradient(#000, transparent);
+    -webkit-mask-image: linear-gradient(#000, transparent);
+  }
+  .brand { display: flex; align-items: center; gap: 18px; }
+  .brand img { width: 84px; height: 84px; border-radius: 19px; box-shadow: 0 10px 30px rgba(0,0,0,.45); }
+  .issue { font: 600 13px var(--sans); color: var(--chrome); letter-spacing: .02em; }
+  h1 { font: 900 clamp(56px, 10vw, 112px)/.9 var(--serif); margin: 8px 0 0; letter-spacing: -.02em; }
+  .dek { font: 400 clamp(20px, 2.6vw, 26px)/1.35 var(--serif); max-width: 620px; margin: 22px 0 30px; color: #E9E5DC; }
+  .cta { display: inline-flex; gap: 12px; flex-wrap: wrap; }
+  .btn { display: inline-block; padding: 14px 22px; border-radius: 14px; font-weight: 700; text-decoration: none; }
+  .btn.primary { background: var(--magenta); color: #fff; }
+  .btn.ghost { background: transparent; color: var(--ink); border: 1px solid rgba(255,255,255,.25); }
+  .soon { font-size: 14px; color: var(--chrome); margin-top: 12px; }
+
+  /* The shelf: screenshots stand on a chrome ledge */
+  .shelf { margin: 30px 0 0; position: relative; }
+  .rail { display: flex; gap: 22px; overflow-x: auto; padding: 10px 24px 0; scroll-snap-type: x mandatory; scrollbar-width: none; }
+  .rail::-webkit-scrollbar { display: none; }
+  .rail img { height: 520px; border-radius: 22px; scroll-snap-align: center; box-shadow: 0 18px 40px rgba(0,0,0,.5); flex: none; }
+  .rail img.wide { height: 420px; align-self: flex-end; }
+  .ledge { height: 4px; margin-top: -2px; background: linear-gradient(#C9CFDB, #6B7386); box-shadow: 0 10px 18px rgba(0,0,0,.5); }
+
+  section { padding: 72px 0; }
+  h2 { font: 800 clamp(30px, 4vw, 42px)/1.1 var(--serif); margin: 0 0 10px; }
+  .kicker { display: inline-block; font: 700 13px var(--sans); padding: 4px 10px; border-radius: 6px; background: var(--yellow); color: #111; transform: rotate(-1.5deg); margin-bottom: 14px; }
+
+  .grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 18px; margin-top: 28px; }
+  .card { background: var(--shelf); border-radius: 18px; padding: 22px; border: 1px solid rgba(255,255,255,.06); }
+  .card h3 { font: 800 21px var(--serif); margin: 10px 0 6px; }
+  .card p { margin: 0; color: #C9CCD6; font-size: 15.5px; }
+  .dot { width: 34px; height: 34px; border-radius: 50%; display: grid; place-items: center; font-size: 18px; }
+
+  /* A newsprint band, like the inside of an issue */
+  .paper { background: var(--paper); color: #1b1b1f; }
+  .paper h2 { color: #111; }
+  .columns { columns: 2 300px; column-gap: 40px; column-rule: 1px solid rgba(0,0,0,.15); margin-top: 18px; }
+  .columns p { margin: 0 0 14px; break-inside: avoid; }
+  .columns p:first-child::first-letter { float: left; font: 900 64px/.8 var(--serif); margin: 6px 8px 0 0; color: var(--magenta); }
+
+  .themes { display: flex; gap: 10px; flex-wrap: wrap; margin-top: 22px; }
+  .chip { padding: 8px 14px; border-radius: 999px; font: 700 14px var(--sans); border: 2px solid transparent; }
+
+  footer { padding: 40px 0 60px; color: var(--chrome); font-size: 14px; }
+  footer a { color: var(--ink); }
+  @media (max-width: 640px) { .rail img { height: 420px; } .rail img.wide { height: 300px; } }
+</style>
+</head>
+<body>
+<div class="press"><span class="c"></span><span class="m"></span><span class="y"></span><span class="k"></span></div>
+
+<header class="hero">
+  <div class="wrap">
+    <div class="brand">
+      <img src="assets/icon.png" alt="RackFlip app icon">
+      <div class="issue">For iPhone, iPad and the iPhone Duo</div>
+    </div>
+    <h1>RackFlip</h1>
+    <p class="dek">Your magazine rack, from Komga. Old issues, real paper feel: pages that curl under your thumb, spreads that open across the fold, and a newsstand that remembers where you left off.</p>
+    <div class="cta">
+      <a class="btn primary" href="#features">See what it does</a>
+      <a class="btn ghost" href="privacy/">Privacy policy</a>
+    </div>
+    <div class="soon">Coming to the App Store.</div>
+  </div>
+
+  <div class="shelf">
+    <div class="rail">
+      <img src="assets/shot-1.png" alt="RackFlip Newsstand screen" onerror="this.remove()">
+      <img src="assets/shot-2.png" alt="Reading an issue with a page curl" onerror="this.remove()">
+      <img src="assets/shot-duo.png" class="wide" alt="A two-page spread on the iPhone Duo's inner screen" onerror="this.remove()">
+      <img src="assets/shot-3.png" alt="Library rows" onerror="this.remove()">
+      <img src="assets/shot-4.png" alt="Themes" onerror="this.remove()">
+    </div>
+    <div class="ledge"></div>
+  </div>
+</header>
+
+<section id="features">
+  <div class="wrap">
+    <span class="kicker">What's inside</span>
+    <h2>A reader built for magazines, not ebooks</h2>
+    <div class="grid">
+      <div class="card"><div class="dot" style="background:var(--magenta)">📖</div><h3>A real page curl</h3><p>Turn the page and it bends like paper. On a wide screen it opens as a book: cover alone on the right, then spreads with a shadow at the spine.</p></div>
+      <div class="card"><div class="dot" style="background:var(--cyan)">📱</div><h3>Made for the fold</h3><p>On the iPhone Duo, unfold mid-read and the issue opens into a two-page spread on the same page. Fold it shut and it carries on in one.</p></div>
+      <div class="card"><div class="dot" style="background:var(--yellow); color:#111">⬇︎</div><h3>Read offline</h3><p>Save any issue to the phone for the train or the plane. Import CBZ and PDF files from the Files app too.</p></div>
+      <div class="card"><div class="dot" style="background:#3A4560">🗂</div><h3>Your own shelves</h3><p>Make categories, hide magazines you don't want on the newsstand, and keep several Komga servers side by side.</p></div>
+      <div class="card"><div class="dot" style="background:#3A4560">🔄</div><h3>Picks up where you left off</h3><p>Your place syncs back to Komga, so the web reader and every device agree on the page.</p></div>
+      <div class="card"><div class="dot" style="background:#3A4560">🎨</div><h3>Eight themes with character</h3><p>Not just colors. Comic Book letters headings in caption boxes. Manga adds speed lines. Arcade glows in neon.</p></div>
+    </div>
+    <div class="themes">
+      <span class="chip" style="background:#1A2030;border-color:#8A93A6">Newsstand</span>
+      <span class="chip" style="background:#000;border-color:#333">Midnight</span>
+      <span class="chip" style="background:#ECE9E2;color:#111">Newsprint</span>
+      <span class="chip" style="background:#19102E;color:#7DF9FF;border-color:#00F0FF">Arcade</span>
+      <span class="chip" style="background:#FFE14D;color:#111;border-color:#111;font-style:italic">Comic Book</span>
+      <span class="chip" style="background:#F7F5F0;color:#111;border-color:#111">Manga</span>
+      <span class="chip" style="background:linear-gradient(90deg,#FF5FA2,#8B7CFF);color:#fff">Anime</span>
+      <span class="chip" style="background:#8FD3FF;color:#111;border-color:#111">Saturday Cartoon</span>
+    </div>
+  </div>
+</section>
+
+<section class="paper">
+  <div class="wrap">
+    <span class="kicker">How it works</span>
+    <h2>Bring your own library</h2>
+    <div class="columns">
+      <p>RackFlip is a reader, not a store. It connects to a Komga server you run yourself, at home or anywhere you host it, and shows the magazines already in your library. Sign in with your Komga address, email and password.</p>
+      <p>Nothing passes through us. The app talks only to the servers you add, and your login is kept in the iPhone's Keychain. There are no accounts to make, no ads and no tracking.</p>
+      <p>Komga is free, open-source software. If you don't have a server yet, see <a href="https://komga.org" style="color:#9b0058">komga.org</a> to set one up.</p>
+    </div>
+  </div>
+</section>
+
+<section id="support">
+  <div class="wrap">
+    <span class="kicker">Support</span>
+    <h2>Questions or a bug?</h2>
+    <p>Open an issue on <a href="https://github.com/L8rMr/rackflip/issues">GitHub</a> and include your iOS version, your device and what you were doing. Screenshots help.</p>
+    <p style="color:#C9CCD6">Can't sign in? Check that your Komga address opens in Safari on the same phone, and that it starts with https://.</p>
+  </div>
+</section>
+
+<footer>
+  <div class="wrap">
+    <a href="privacy/">Privacy policy</a> &nbsp;&nbsp; <a href="https://github.com/L8rMr/rackflip/issues">Support</a><br>
+    © 2026 Alen Lvovich<br>
+    RackFlip isn't affiliated with Komga or with any magazine publisher.
+  </div>
+</footer>
+</body>
+</html>
